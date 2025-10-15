@@ -77,6 +77,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GeoUtils.cs" />
+    <Compile Include="ItineraryPlanner.cs" />
     <Compile Include="Geocoder.cs" />
     <Compile Include="IItineraryService.cs" />
     <Compile Include="ItineraryService.cs" />

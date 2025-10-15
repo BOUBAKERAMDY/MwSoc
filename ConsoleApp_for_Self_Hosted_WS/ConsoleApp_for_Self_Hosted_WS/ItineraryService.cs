@@ -9,30 +9,36 @@ public class ItineraryService : IItineraryService
     {
         try
         {
-            // 1) Conseguir coordenadas de origen/destino
-            var (oLat, oLon) = TryParseLatLon(origin, out var okO)
-                ? TryParseLatLon(origin, out _)
-                : Geocoder.GetCoordinatesAsync(origin).GetAwaiter().GetResult();
+            // 1) Coords de origen/destino (acepta "lat,lon" o geocoding)
+            double oLat, oLon, dLat, dLon;
 
-            var (dLat, dLon) = TryParseLatLon(destination, out var okD)
-                ? TryParseLatLon(destination, out _)
-                : Geocoder.GetCoordinatesAsync(destination).GetAwaiter().GetResult();
+            if (!TryParseLatLon(origin, out oLat, out oLon))
+            {
+                var o = Geocoder.GetCoordinatesAsync(origin).GetAwaiter().GetResult();
+                oLat = o.lat; oLon = o.lon;
+            }
+
+            if (!TryParseLatLon(destination, out dLat, out dLon))
+            {
+                var d = Geocoder.GetCoordinatesAsync(destination).GetAwaiter().GetResult();
+                dLat = d.lat; dLon = d.lon;
+            }
 
             if ((oLat == 0 && oLon == 0) || (dLat == 0 && dLon == 0))
             {
-                // Fallback caminando si no hubo geocoding
-                return ItineraryPlannerFallback(oLat, oLon, dLat, dLon, "Geocoding failed or zero coords.");
+                return ItineraryPlanner.Compute(oLat, oLon, dLat, dLon, Array.Empty<StationInfo>(),
+                    maxWalkToStartMeters: 1200, maxWalkToEndMeters: 1200,
+                    note: "Geocoding failed or zero coords.");
             }
 
             Console.WriteLine($"Coords -> origin({oLat},{oLon})  dest({dLat},{dLon})");
 
             // 2) Llamar al proxy SOAP para obtener estaciones
-            var proxy = ProxyClient.Create();
             StationInfo[] stations = Array.Empty<StationInfo>();
+            var proxy = ProxyClient.Create();
             try
             {
-                // Cambia "Nice" por la ciudad/código que use vuestro proxy
-                stations = proxy.GetStations("Nice");
+                stations = proxy.GetStations("Nice"); // TODO: cambia la ciudad si hace falta
                 ((IClientChannel)proxy).Close();
             }
             catch (Exception ex)
@@ -42,9 +48,9 @@ public class ItineraryService : IItineraryService
                 if (ch.State != CommunicationState.Closed) ch.Abort();
             }
 
-            // 3) Calcular itinerario local
-            var result = ItineraryPlanner.Compute(oLat, oLon, dLat, dLon, stations);
-            return result;
+            // 3) Calcular y devolver
+            return ItineraryPlanner.Compute(oLat, oLon, dLat, dLon, stations,
+                maxWalkToStartMeters: 1200, maxWalkToEndMeters: 1200);
         }
         catch (Exception ex)
         {
@@ -66,32 +72,22 @@ public class ItineraryService : IItineraryService
         }
     }
 
-    // -------- helpers --------
-
-    // acepta "lat,lon" (con punto o coma)
-    private static (double lat, double lon) TryParseLatLon(string s, out bool ok)
+    // helper: acepta "lat,lon" (punto o coma)
+    private static bool TryParseLatLon(string s, out double lat, out double lon)
     {
-        ok = false;
-        if (string.IsNullOrWhiteSpace(s)) return (0, 0);
+        lat = 0; lon = 0;
+        if (string.IsNullOrWhiteSpace(s)) return false;
 
         var parts = s.Split(',');
-        if (parts.Length != 2) return (0, 0);
+        if (parts.Length != 2) return false;
 
-        var style = NumberStyles.Float;
         var us = CultureInfo.InvariantCulture;
+        var p0 = parts[0].Trim().Replace(',', '.');
+        var p1 = parts[1].Trim().Replace(',', '.');
 
-        if (double.TryParse(parts[0].Trim().Replace(',', '.'), style, us, out var lat) &&
-            double.TryParse(parts[1].Trim().Replace(',', '.'), style, us, out var lon))
-        {
-            ok = true;
-            return (lat, lon);
-        }
-        return (0, 0);
-    }
+        if (!double.TryParse(p0, System.Globalization.NumberStyles.Float, us, out lat)) return false;
+        if (!double.TryParse(p1, System.Globalization.NumberStyles.Float, us, out lon)) return false;
 
-    private static ItineraryDto ItineraryPlannerFallback(double oLat, double oLon, double dLat, double dLon, string note)
-    {
-        // si tienes ItineraryPlanner, úsalo con 0 estaciones para “walk-only”
-        return ItineraryPlanner.Compute(oLat, oLon, dLat, dLon, Array.Empty<StationInfo>(), note);
+        return true;
     }
 }
