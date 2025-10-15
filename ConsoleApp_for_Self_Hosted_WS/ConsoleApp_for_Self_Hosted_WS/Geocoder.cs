@@ -2,6 +2,7 @@
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+
 public static class Geocoder
 {
     private static readonly HttpClient http = new HttpClient();
@@ -24,10 +25,12 @@ public static class Geocoder
                 double lon = double.Parse(results[0].lon, System.Globalization.CultureInfo.InvariantCulture);
                 return (lat, lon);
             }
+
+            Console.WriteLine($"[Geocoder] No results for {address}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Geocoding failed: {ex.Message}");
+            Console.WriteLine($"[Geocoder] Error: {ex.Message}");
         }
 
         // fallback si no encuentra nada
