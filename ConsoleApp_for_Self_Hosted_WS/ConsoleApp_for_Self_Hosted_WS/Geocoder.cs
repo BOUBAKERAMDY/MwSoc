@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -9,31 +11,47 @@ public static class Geocoder
 
     public static async Task<(double lat, double lon)> GetCoordinatesAsync(string address)
     {
+        if (string.IsNullOrWhiteSpace(address))
+            return (0, 0);
+
         try
         {
-            var encoded = Uri.EscapeDataString(address);
-            var url = $"https://nominatim.openstreetmap.org/search?q={encoded}&format=json&limit=1";
+            //  we add "France"
+            string query = address.IndexOf("France", StringComparison.OrdinalIgnoreCase) >= 0
+                ? address
+                : $"{address}, France";
 
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("Let'sGoBikingApp/1.0");
+            string encoded = Uri.EscapeDataString(query);
 
-            var json = await http.GetStringAsync(url);
+            string url =
+                $"https://nominatim.openstreetmap.org/search?" +
+                $"q={encoded}&format=json&limit=1" +
+                $"&countrycodes=fr&accept-language=en";
+
+            http.DefaultRequestHeaders.UserAgent.Clear();
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("LetsGoBikingApp/1.0 (contact: test@example.com)");
+
+            string json = await http.GetStringAsync(url);
             var results = JsonSerializer.Deserialize<NominatimResult[]>(json);
 
             if (results != null && results.Length > 0)
             {
-                double lat = double.Parse(results[0].lat, System.Globalization.CultureInfo.InvariantCulture);
-                double lon = double.Parse(results[0].lon, System.Globalization.CultureInfo.InvariantCulture);
+                double lat = double.Parse(results[0].lat, CultureInfo.InvariantCulture);
+                double lon = double.Parse(results[0].lon, CultureInfo.InvariantCulture);
+
+                Console.WriteLine($"[Geocoder] OK: {address} -> ({lat},{lon}) ✅");
                 return (lat, lon);
             }
-
-            Console.WriteLine($"[Geocoder] No results for {address}");
+            else
+            {
+                Console.WriteLine($"[Geocoder] No results for {address}");
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[Geocoder] Error: {ex.Message}");
         }
 
-        // fallback si no encuentra nada
         return (0, 0);
     }
 

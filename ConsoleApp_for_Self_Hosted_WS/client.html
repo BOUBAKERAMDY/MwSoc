@@ -31,47 +31,47 @@
 <body>
   <h1>🚲 Let's Go Biking – REST Client</h1>
   <div class="card">
-    <label>Origen</label>
-    <input id="origin" placeholder="Ej.: 43.701,7.268 o Nice Cathedral" />
-    <label>Destino</label>
-    <input id="destination" placeholder="Ej.: 43.695,7.283 o Massena" />
+    <label>Origin</label>
+    <input id="origin" placeholder="Ej.: 43.701,7.268 or Nice Cathedral" />
+    <label>Destination</label>
+    <input id="destination" placeholder="Ej.: 43.695,7.283 or Massena" />
 
     <div class="row">
-      <button onclick="getItinerary()">Buscar itinerario</button>
+      <button onclick="getItinerary()">Search itineraries</button>
       <button class="secondary" onclick="demo()">Demo coords</button>
     </div>
 
-    <div class="muted" id="url">Aún no se ha consultado nada.</div>
+    <div class="muted" id="url">No consults.</div>
 
     <div id="pretty" class="result" style="display:none;">
       <div class="tile">
         <div class="kpi" id="totalTime">–</div>
-        <div class="muted">Tiempo total</div>
+        <div class="muted">Total time</div>
       </div>
       <div class="tile">
         <div class="kpi" id="totalKm">–</div>
-        <div class="muted">Distancia total</div>
+        <div class="muted">Total Distance</div>
       </div>
       <div class="tile">
         <div class="kpi" id="walk1">–</div>
-        <div class="muted">Caminar → estación</div>
+        <div class="muted">Walk → station</div>
       </div>
       <div class="tile">
         <div class="kpi" id="bike">–</div>
-        <div class="muted">Tramo en bici</div>
+        <div class="muted">Traject on bike</div>
       </div>
       <div class="tile">
         <div class="kpi" id="walk2">–</div>
-        <div class="muted">Caminar → destino</div>
+        <div class="muted">Walk → destination</div>
       </div>
       <div class="tile">
         <div class="kpi" id="stations">–</div>
-        <div class="muted">Estaciones (origen → destino)</div>
+        <div class="muted">Stations (origin → destination)</div>
       </div>
     </div>
 
-    <h3 style="margin-top:18px;">Respuesta cruda</h3>
-    <pre id="raw" class="mono">Sin datos.</pre>
+    <h3 style="margin-top:18px;">Route</h3>
+    <pre id="raw" class="mono">No data.</pre>
   </div>
 
   <script>
