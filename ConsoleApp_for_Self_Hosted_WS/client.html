@@ -1,124 +1,387 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Let's Go Biking! – Test Client</title>
-  <style>
-    :root { --brand:#0078d7; }
-    body { font-family: system-ui, Arial, sans-serif; background:#f5f7fb; margin:32px; color:#222; }
-    h1 { color:var(--brand); margin-bottom:16px; }
-    .card { background:#fff; border-radius:14px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,.06); max-width:820px; }
-    label { display:block; font-weight:600; margin-top:12px; }
-    input {
-      width:100%; padding:10px 12px; margin-top:6px; border:1px solid #d7dbe3; border-radius:10px;
-      font-size:14px; outline:none;
-    }
-    input:focus { border-color: var(--brand); box-shadow:0 0 0 3px rgba(0,120,215,.12); }
-    .row { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
-    button {
-      background:var(--brand); color:#fff; border:0; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight:600;
-    }
-    button.secondary { background:#edf2f7; color:#2b2f36; }
-    .muted { color:#6b7280; font-size:12px; margin-top:6px; }
-    .result { margin-top:18px; display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
-    .tile { background:#fafbff; border:1px solid #e6e9f2; border-radius:12px; padding:14px; }
-    .kpi { font-size:26px; font-weight:800; }
-    .kpi small { font-size:12px; font-weight:600; color:#6b7280; margin-left:4px; }
-    .mono { background:#111; color:#e7e7e7; padding:10px; border-radius:10px; overflow:auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; }
-    .err { color:#b00020; font-weight:700; }
-  </style>
+    <meta charset="UTF-8" />
+    <title>Let's Go Biking! - REST Client</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f7f9fc;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #0078d7;
+            text-align: center;
+        }
+
+        .main-layout {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 25px;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            flex: 1;
+            min-width: 400px;
+            max-width: 550px;
+        }
+
+        #map-container {
+            flex: 1;
+            min-width: 400px;
+            max-width: 550px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #0078d7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin-top: 15px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+            button:hover {
+                background: #005fa3;
+            }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: #f0f4fa;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestions {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-top: 2px;
+            position: absolute;
+            z-index: 1000;
+            width: calc(100% - 22px);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+            .suggestions div {
+                padding: 6px;
+                cursor: pointer;
+            }
+
+                .suggestions div:hover {
+                    background: #0078d7;
+                    color: white;
+                }
+
+        #map {
+            height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        h3 {
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <h1>🚲 Let's Go Biking – REST Client</h1>
-  <div class="card">
-    <label>Origin</label>
-    <input id="origin" placeholder="Ej.: 43.701,7.268 or Nice Cathedral" />
-    <label>Destination</label>
-    <input id="destination" placeholder="Ej.: 43.695,7.283 or Massena" />
+    <h1>🚲 Let's Go Biking – REST Client</h1>
 
-    <div class="row">
-      <button onclick="getItinerary()">Search itineraries</button>
-      <button class="secondary" onclick="demo()">Demo coords</button>
+    <div class="main-layout">
+        <!-- Left panel -->
+        <div class="container">
+            <label>Origin:</label>
+            <input id="origin"
+                   placeholder="Example: Place Massena, Nice"
+                   oninput="showSuggestions(this, 'originList')"
+                   autocomplete="off" />
+            <div id="originList" class="suggestions"></div>
+
+            <label>Destination:</label>
+            <input id="destination"
+                   placeholder="Example: Gare Thiers, Nice"
+                   oninput="showSuggestions(this, 'destList')"
+                   autocomplete="off" />
+            <div id="destList" class="suggestions"></div>
+
+            <button onclick="getItinerary()">Search Itinerary</button>
+
+            <div id="info" class="grid" style="display: none">
+                <div class="card">
+                    <h3>Total Time</h3>
+                    <p id="time"></p>
+                </div>
+                <div class="card">
+                    <h3>Total Distance</h3>
+                    <p id="distance"></p>
+                </div>
+                <div class="card">
+                    <h3>Walk → Station</h3>
+                    <p id="walkTo"></p>
+                </div>
+                <div class="card">
+                    <h3>Biking Segment</h3>
+                    <p id="bike"></p>
+                </div>
+                <div class="card">
+                    <h3>Walk → Destination</h3>
+                    <p id="walkEnd"></p>
+                </div>
+                <div class="card">
+                    <h3>Stations</h3>
+                    <p id="stations"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right panel -->
+        <div id="map-container">
+            <h3>Itinerary Map</h3>
+            <div id="map"></div>
+        </div>
     </div>
 
-    <div class="muted" id="url">No consults.</div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <div id="pretty" class="result" style="display:none;">
-      <div class="tile">
-        <div class="kpi" id="totalTime">–</div>
-        <div class="muted">Total time</div>
-      </div>
-      <div class="tile">
-        <div class="kpi" id="totalKm">–</div>
-        <div class="muted">Total Distance</div>
-      </div>
-      <div class="tile">
-        <div class="kpi" id="walk1">–</div>
-        <div class="muted">Walk → station</div>
-      </div>
-      <div class="tile">
-        <div class="kpi" id="bike">–</div>
-        <div class="muted">Traject on bike</div>
-      </div>
-      <div class="tile">
-        <div class="kpi" id="walk2">–</div>
-        <div class="muted">Walk → destination</div>
-      </div>
-      <div class="tile">
-        <div class="kpi" id="stations">–</div>
-        <div class="muted">Stations (origin → destination)</div>
-      </div>
-    </div>
+    <script>
+        // Initialize map
+        const map = L.map("map").setView([43.7, 7.26], 13);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors",
+        }).addTo(map);
+        let routeLayer = null;
 
-    <h3 style="margin-top:18px;">Route</h3>
-    <pre id="raw" class="mono">No data.</pre>
-  </div>
+        // --- Autocomplete controls ---
+        let suppressSuggestions = false;
+        let lastSelectedValue = "";
+        let suggestionTimeout;
 
-  <script>
-    const fmtTime = s => {
-      if (!s || s<=0) return '0 s';
-      const m = Math.floor(s/60), sec = s%60;
-      return m ? `${m} min ${sec}s` : `${sec} s`;
-    };
-    const fmtKm = km => (km ?? 0).toFixed(3) + ' km';
-    const fmtMeters = m => Math.round(m ?? 0) + ' m';
+        const NICE_LAT = 43.7;
+        const NICE_LON = 7.26;
 
-    const normalizeLatLon = t => (t || '').replace(/\s*,\s*/g, ',').trim();
+        function showSuggestions(input, listId) {
+            if (suppressSuggestions) return;
+            clearTimeout(suggestionTimeout);
+            suggestionTimeout = setTimeout(() => loadSuggestions(input, listId), 300);
+        }
 
-    function demo() {
-      document.getElementById('origin').value = '43.701, 7.268';
-      document.getElementById('destination').value = '43.695, 7.283';
-    }
+        async function loadSuggestions(input, listId) {
+            const list = document.getElementById(listId);
+            const query = input.value.trim();
+            if (query === lastSelectedValue) {
+                list.innerHTML = "";
+                return;
+            }
 
-    async function getItinerary() {
-      let origin = normalizeLatLon(document.getElementById('origin').value);
-      let destination = normalizeLatLon(document.getElementById('destination').value);
-      if (!origin || !destination) { alert('Introduce ambos campos'); return; }
+            list.innerHTML = "";
+            if (query.length < 3) return;
 
-      const url = `http://localhost:8090/MyService/Itinerary?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
-      document.getElementById('url').textContent = 'Consultando: ' + url;
-      document.getElementById('raw').textContent = 'Cargando...';
-      document.getElementById('pretty').style.display = 'none';
+            const viewbox = "7.15,43.75,7.35,43.65";
+            const urlNice = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&countrycodes=fr&limit=10&viewbox=${viewbox}&bounded=1`;
+            const urlFrance = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ", France")}&format=json&addressdetails=1&countrycodes=fr&limit=10`;
 
-      try {
-        const res = await fetch(url);                 // requiere CORS (ya activado en Program.cs)
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const data = await res.json();
+            try {
+                const [resNice, resFrance] = await Promise.all([fetch(urlNice), fetch(urlFrance)]);
+                const [dataNice, dataFrance] = await Promise.all([resNice.json(), resFrance.json()]);
 
-        // pinta KPIs
-        document.getElementById('totalTime').textContent = fmtTime(data.TotalSeconds);
-        document.getElementById('totalKm').textContent   = fmtKm(data.TotalKm);
-        document.getElementById('walk1').textContent     = `${fmtMeters(data.WalkToStartMeters)} · ${fmtTime(data.WalkToStartSeconds)}`;
-        document.getElementById('bike').textContent      = `${fmtMeters(data.BikeMeters)} · ${fmtTime(data.BikeSeconds)}`;
-        document.getElementById('walk2').textContent     = `${fmtMeters(data.WalkToEndMeters)} · ${fmtTime(data.WalkToEndSeconds)}`;
-        document.getElementById('stations').textContent  = `${data.StartStation ?? '—'} → ${data.EndStation ?? '—'}`;
+                const combined = [...dataNice, ...dataFrance].filter(
+                    (v, i, a) => a.findIndex((t) => t.display_name === v.display_name) === i
+                );
 
-        document.getElementById('pretty').style.display = 'grid';
-        document.getElementById('raw').textContent = JSON.stringify(data, null, 2);
-      } catch (err) {
-        document.getElementById('raw').textContent = 'Error: ' + err + '\n¿Está en ejecución el servidor? ¿CORS activado en Program.cs?';
-      }
-    }
-  </script>
+                combined.forEach((p) => {
+                    const dLat = parseFloat(p.lat) - NICE_LAT;
+                    const dLon = parseFloat(p.lon) - NICE_LON;
+                    p._distance = Math.sqrt(dLat * dLat + dLon * dLon);
+                });
+
+                combined.sort((a, b) => a._distance - b._distance);
+
+                combined.slice(0, 10).forEach((place) => {
+                    const div = document.createElement("div");
+                    const distKm = Math.round(place._distance * 111 * 10) / 10;
+                    div.innerHTML = `<strong>${highlightMatch(place.display_name, query)}</strong><br><small style="color:#666">~${distKm} km from Nice</small>`;
+                    div.onclick = () => {
+                        suppressSuggestions = true;
+                        input.value = place.display_name;
+                        input.dataset.lat = place.lat;
+                        input.dataset.lon = place.lon;
+                        lastSelectedValue = place.display_name;
+                        list.innerHTML = "";
+                        input.blur();
+                        setTimeout(() => (suppressSuggestions = false), 500);
+                    };
+                    list.appendChild(div);
+                });
+            } catch (err) {
+                console.error("Error loading suggestions:", err);
+            }
+        }
+
+        function highlightMatch(text, query) {
+            const regex = new RegExp(`(${query})`, "ig");
+            return text.replace(regex, "<mark style='background: #ffeaa7;'>$1</mark>");
+        }
+
+        document.addEventListener("click", (e) => {
+            document.querySelectorAll(".suggestions").forEach((list) => {
+                if (!list.contains(e.target)) list.innerHTML = "";
+            });
+        });
+
+        // --- Itinerary handling ---
+        async function getItinerary() {
+            const origin = document.getElementById("origin").value.trim();
+            const destination = document.getElementById("destination").value.trim();
+            const oLat = document.getElementById("origin").dataset.lat;
+            const oLon = document.getElementById("origin").dataset.lon;
+            const dLat = document.getElementById("destination").dataset.lat;
+            const dLon = document.getElementById("destination").dataset.lon;
+
+            if (!origin || !destination) {
+                alert("Please enter both fields.");
+                return;
+            }
+
+            const url = `http://localhost:8090/MyService/Itinerary?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(res.status + " " + res.statusText);
+                const data = await res.json();
+
+                updateCards(data);
+
+                if (oLat && oLon && dLat && dLon) {
+                    showMap(oLat, oLon, dLat, dLon, data.StartStation, data.EndStation);
+                } else {
+                    geocodeAndShowMap(origin, destination, data.StartStation, data.EndStation);
+                }
+            } catch (err) {
+                console.error("Error fetching itinerary:", err);
+            }
+        }
+
+        function updateCards(d) {
+            const info = document.getElementById("info");
+            info.style.display = "grid";
+
+            document.getElementById("time").textContent = formatTime(d.TotalSeconds);
+            document.getElementById("distance").textContent = (d.TotalKm || 0).toFixed(3) + " km";
+            document.getElementById("walkTo").textContent = `${d.WalkToStartMeters || 0} m • ${formatTime(d.WalkToStartSeconds)}`;
+            document.getElementById("bike").textContent = `${d.BikeMeters || 0} m • ${formatTime(d.BikeSeconds)}`;
+            document.getElementById("walkEnd").textContent = `${d.WalkToEndMeters || 0} m • ${formatTime(d.WalkToEndSeconds)}`;
+            document.getElementById("stations").textContent = `${d.StartStation || "—"} → ${d.EndStation || "—"}`;
+        }
+
+        function formatTime(sec) {
+            if (!sec || sec <= 0) return "0 m • 0 s";
+            const min = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${min} min ${s} s`;
+        }
+
+        async function showMap(oLat, oLon, dLat, dLon, startStationName, endStationName) {
+            if (routeLayer) map.removeLayer(routeLayer);
+
+            const knownStations = {
+                "Jean Médecin": [43.703293, 7.266289],
+                "Gambetta": [43.704515, 7.251711],
+                "Massena": [43.69773, 7.27102],
+                "Thiers": [43.705446, 7.266531],
+                "Nice Ville": [43.7049, 7.2618],
+            };
+
+            const geo = async (q) => {
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ", Nice, France")}&format=json&limit=1`;
+                try {
+                    const r = await fetch(url);
+                    const j = await r.json();
+                    if (j.length > 0) return [parseFloat(j[0].lat), parseFloat(j[0].lon)];
+                } catch {
+                    return null;
+                }
+                return null;
+            };
+
+            const start = [parseFloat(oLat), parseFloat(oLon)];
+            const end = [parseFloat(dLat), parseFloat(dLon)];
+            const s = knownStations[startStationName] || (startStationName ? await geo(startStationName) : null);
+            const e = knownStations[endStationName] || (endStationName ? await geo(endStationName) : null);
+
+            const markers = [];
+            const lines = [];
+
+            markers.push(L.marker(start).bindPopup("Origin"));
+            markers.push(L.marker(end).bindPopup("Destination"));
+
+            if (s && e) {
+                lines.push(L.polyline([start, s], { color: "gray", weight: 3, dashArray: "4,6" }));
+                lines.push(L.polyline([s, e], { color: "blue", weight: 5 }));
+                lines.push(L.polyline([e, end], { color: "gray", weight: 3, dashArray: "4,6" }));
+
+                markers.push(
+                    L.marker(s).bindPopup(`🚴 Start Station: ${startStationName}`),
+                    L.marker(e).bindPopup(`🚴 End Station: ${endStationName}`)
+                );
+            } else {
+                lines.push(L.polyline([start, end], { color: "blue", weight: 4 }));
+            }
+
+            routeLayer = L.layerGroup([...markers, ...lines]).addTo(map);
+            const allPoints = [start, end, s, e].filter(Boolean);
+            if (allPoints.length > 0)
+                map.fitBounds(allPoints, { padding: [50, 50] });
+        }
+
+        async function geocodeAndShowMap(origin, destination, s1, s2) {
+            const geo = async (q) => {
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`;
+                const r = await fetch(url);
+                const j = await r.json();
+                if (j.length > 0) return [parseFloat(j[0].lat), parseFloat(j[0].lon)];
+                return null;
+            };
+
+            const o = await geo(origin);
+            const d = await geo(destination);
+            if (o && d) showMap(o[0], o[1], d[0], d[1], s1, s2);
+        }
+    </script>
 </body>
 </html>
