@@ -9,4 +9,9 @@ public interface IItineraryService
     [WebGet(UriTemplate = "/Itinerary?origin={origin}&destination={destination}",
             ResponseFormat = WebMessageFormat.Json)]
     ItineraryDto GetItinerary(string origin, string destination);
+
+    [OperationContract]
+    [WebGet(UriTemplate = "/ItineraryByCoords?originLat={originLat}&originLon={originLon}&destLat={destLat}&destLon={destLon}", 
+            ResponseFormat = WebMessageFormat.Json)]
+    ItineraryDto GetItineraryByCoords(double originLat, double originLon, double destLat, double destLon);
 }

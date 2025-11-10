@@ -26,7 +26,8 @@ namespace ConsoleApp_for_Self_Hosted_WS
                         Array.Empty<StationInfo>(),
                         maxWalkToStartMeters: 1200,
                         maxWalkToEndMeters: 1200,
-                        note: "Geocoding failed or zero coords.");
+                        note: "Geocoding failed or zero coordinates."
+                    );
                 }
 
                 Console.WriteLine($"[Itinerary] origin({oLat},{oLon})  dest({dLat},{dLon})");
@@ -55,6 +56,7 @@ namespace ConsoleApp_for_Self_Hosted_WS
                     var ch = (IClientChannel)proxy;
                     if (ch.State != CommunicationState.Closed) ch.Abort();
 
+                    // fallback if proxy service is unavailable
                     stations = new[]
                     {
                         new StationInfo { Name="Jean Médecin", Lat=43.7010, Lng=7.2680, Bikes=6, Stands=2 },
@@ -91,13 +93,59 @@ namespace ConsoleApp_for_Self_Hosted_WS
             }
         }
 
-        // ---------- Helpers privados ----------
 
-        // Normaliza "43.7, 7.2" -> "43.7,7.2"
+        // itinerary using direct coordinates
+        public ItineraryDto GetItineraryByCoords(double originLat, double originLon, double destLat, double destLon)
+        {
+            try
+            {
+                Console.WriteLine($"[Itinerary] Using direct coordinates ({originLat},{originLon}) → ({destLat},{destLon})");
+
+                StationInfo[] stations;
+                var proxy = ProxyClient.Create();
+                try
+                {
+                    stations = proxy.GetStations("Nice");
+                    ((IClientChannel)proxy).Close();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[Proxy] " + ex.Message);
+                    var ch = (IClientChannel)proxy;
+                    if (ch.State != CommunicationState.Closed) ch.Abort();
+
+                    // fallback list of stations if proxy is down
+                    stations = new[]
+                    {
+                        new StationInfo { Name="Jean Médecin", Lat=43.7010, Lng=7.2680, Bikes=6, Stands=2 },
+                        new StationInfo { Name="Massena",      Lat=43.6950, Lng=7.2830, Bikes=3, Stands=5 },
+                        new StationInfo { Name="Gambetta",     Lat=43.7018, Lng=7.2589, Bikes=0, Stands=7 }
+                    };
+                }
+
+                return ItineraryPlanner.Compute(
+                    originLat, originLon,
+                    destLat, destLon,
+                    stations,
+                    maxWalkToStartMeters: 1200,
+                    maxWalkToEndMeters: 1200,
+                    note: "using direct coordinates"
+                );
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[ItineraryByCoords] error: " + ex.Message);
+                return new ItineraryDto
+                {
+                    Note = "Unhandled error in GetItineraryByCoords: " + ex.Message
+                };
+            }
+        }
+
+        // HELPERS
         private static string NormalizeComma(string s) =>
             string.IsNullOrWhiteSpace(s) ? "" : Regex.Replace(s, @"\s*,\s*", ",");
 
-        // Devuelve (lat,lon). Si es texto y el geocoder falla, reintenta con "Nice, France".
         private static (double lat, double lon) GetCoordsWithRetry(string input)
         {
             if (TryParseLatLon(input, out double lat, out double lon))
@@ -113,7 +161,6 @@ namespace ConsoleApp_for_Self_Hosted_WS
             return (c.lat == 0 && c.lon == 0) ? (0, 0) : c;
         }
 
-        // Acepta "lat,lon" con punto o coma
         private static bool TryParseLatLon(string s, out double lat, out double lon)
         {
             lat = 0; lon = 0;

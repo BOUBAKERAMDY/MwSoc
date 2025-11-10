@@ -68,9 +68,9 @@
             font-weight: 600;
         }
 
-            button:hover {
-                background: #005fa3;
-            }
+        button:hover {
+            background: #005fa3;
+        }
 
         .grid {
             display: grid;
@@ -99,15 +99,15 @@
             overflow-y: auto;
         }
 
-            .suggestions div {
-                padding: 6px;
-                cursor: pointer;
-            }
+        .suggestions div {
+            padding: 6px;
+            cursor: pointer;
+        }
 
-                .suggestions div:hover {
-                    background: #0078d7;
-                    color: white;
-                }
+        .suggestions div:hover {
+            background: #0078d7;
+            color: white;
+        }
 
         #map {
             height: 400px;
@@ -124,7 +124,6 @@
     <h1>🚲 Let's Go Biking – REST Client</h1>
 
     <div class="main-layout">
-        <!-- Left panel -->
         <div class="container">
             <label>Origin:</label>
             <input id="origin"
@@ -170,7 +169,6 @@
             </div>
         </div>
 
-        <!-- Right panel -->
         <div id="map-container">
             <h3>Itinerary Map</h3>
             <div id="map"></div>
@@ -180,14 +178,14 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Initialize map
+        // Initializig map
         const map = L.map("map").setView([43.7, 7.26], 13);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "&copy; OpenStreetMap contributors",
         }).addTo(map);
         let routeLayer = null;
 
-        // --- Autocomplete controls ---
+        // Suggestions
         let suppressSuggestions = false;
         let lastSelectedValue = "";
         let suggestionTimeout;
@@ -224,12 +222,12 @@
                     (v, i, a) => a.findIndex((t) => t.display_name === v.display_name) === i
                 );
 
+                // sort by distance to Nice
                 combined.forEach((p) => {
                     const dLat = parseFloat(p.lat) - NICE_LAT;
                     const dLon = parseFloat(p.lon) - NICE_LON;
                     p._distance = Math.sqrt(dLat * dLat + dLon * dLon);
                 });
-
                 combined.sort((a, b) => a._distance - b._distance);
 
                 combined.slice(0, 10).forEach((place) => {
@@ -264,7 +262,7 @@
             });
         });
 
-        // --- Itinerary handling ---
+        // Itinerary handler
         async function getItinerary() {
             const origin = document.getElementById("origin").value.trim();
             const destination = document.getElementById("destination").value.trim();
@@ -278,7 +276,15 @@
                 return;
             }
 
-            const url = `http://localhost:8090/MyService/Itinerary?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+            // Choose endpoint depending on available coordinates
+            let url;
+            if (oLat && oLon && dLat && dLon) {
+                // Call new endpoint with coordinates
+                url = `http://localhost:8090/MyService/ItineraryByCoords?originLat=${oLat}&originLon=${oLon}&destLat=${dLat}&destLon=${dLon}`;
+            } else {
+                // Fallback to text-based endpoint
+                url = `http://localhost:8090/MyService/Itinerary?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+            }
 
             try {
                 const res = await fetch(url);
@@ -294,6 +300,7 @@
                 }
             } catch (err) {
                 console.error("Error fetching itinerary:", err);
+                alert("Failed to get itinerary. Check server connection.");
             }
         }
 
