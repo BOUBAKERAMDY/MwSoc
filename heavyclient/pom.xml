@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.letsgo</groupId>
+    <artifactId>heavyclient</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+
+        <!-- Main class -->
+        <exec.mainClass>com.letsgo.client.TestClient</exec.mainClass>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sun.xml.ws</groupId>
+            <artifactId>jaxws-ri</artifactId>
+            <version>2.3.3</version>
+            <type>pom</type>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jaxws-maven-plugin</artifactId>
+                <version>2.6</version>
+
+                <executions>
+                    <execution>
+                        <id>generate-proxy</id>
+                        <goals><goal>wsimport</goal></goals>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <!-- WSDL -->
+                    <wsdlUrls>
+                        <wsdlUrl>http://localhost:8091/MyServiceSoap?wsdl</wsdlUrl>
+                    </wsdlUrls>
+
+                    <keep>true</keep>
+
+                    <!-- Package where we generate -->
+                    <packageName>com.letsgo.routingclient</packageName>
+
+                    <!-- Folder where we write -->
+                    <sourceDestDir>src/main/java</sourceDestDir>
+                </configuration>
+            </plugin>
+
+            <!-- To execute main -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
