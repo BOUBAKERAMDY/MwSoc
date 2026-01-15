@@ -23,6 +23,10 @@ namespace LetsGoBiking.ProxyCacheServer
         [OperationContract]
         [WebGet(UriTemplate = "TestActiveMQ", ResponseFormat = WebMessageFormat.Json)]
         TestResponse TestActiveMQ();
+
+        [OperationContract]
+        [WebGet(UriTemplate = "GetStations?city={city}", ResponseFormat = WebMessageFormat.Json)]
+        StationInfo[] GetStationsRest(string city);
     }
 
     [System.Runtime.Serialization.DataContract]

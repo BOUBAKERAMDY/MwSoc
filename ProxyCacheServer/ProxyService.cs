@@ -119,6 +119,12 @@ namespace LetsGoBiking.ProxyCacheServer
             }
         }
 
+        public StationInfo[] GetStationsRest(string city)
+        {
+            EnableCORS();
+            return GetStations(city);
+        }
+
         private bool PublishAlert(int stationId, string city, StationInfo station)
         {
             try
