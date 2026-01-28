@@ -1,0 +1,20 @@
+{
+  "supported_cities": [
+    {"name": "lyon", "country": "France", "description": "Major city with extensive Velo'v bike sharing network, over 400 stations"},
+    {"name": "paris", "country": "France", "description": "Capital with Velib bike sharing, thousands of stations across the city"},
+    {"name": "rouen", "country": "France", "description": "Historic city in Normandy with Cy'clic bike sharing"},
+    {"name": "toulouse", "country": "France", "description": "The Pink City with VeloToulouse bike sharing"},
+    {"name": "nancy", "country": "France", "description": "City in Lorraine with velo Stan bike sharing"},
+    {"name": "nantes", "country": "France", "description": "Western France city with Bicloo bike sharing"},
+    {"name": "amiens", "country": "France", "description": "Picardy capital with Velam bike sharing"},
+    {"name": "marseille", "country": "France", "description": "Mediterranean port city with Le Velo bike sharing"},
+    {"name": "lille", "country": "France", "description": "Northern France city with V'lille bike sharing"},
+    {"name": "bruxelles", "country": "Belgium", "description": "Belgian capital with Villo! bike sharing"},
+    {"name": "valence", "country": "France", "description": "Rhone Valley city with Libelo bike sharing"},
+    {"name": "cergy-pontoise", "country": "France", "description": "Paris suburb with VelO2 bike sharing"},
+    {"name": "creteil", "country": "France", "description": "Paris suburb with Cristolib bike sharing"},
+    {"name": "luxembourg", "country": "Luxembourg", "description": "Luxembourg City with Vel'oh! bike sharing"},
+    {"name": "mulhouse", "country": "France", "description": "Alsace city with Velocite bike sharing"},
+    {"name": "besancon", "country": "France", "description": "Franche-Comte capital with VeloCite bike sharing"}
+  ]
+}
