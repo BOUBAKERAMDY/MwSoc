@@ -151,6 +151,40 @@
             </div>
         </div>
     </div>
+    <!-- Chat FAB Button -->
+    <button id="chat-fab" class="chat-fab" onclick="toggleChat()">
+        <i class="fas fa-comments"></i>
+    </button>
+
+    <!-- Chat Panel -->
+    <div id="chat-panel" class="chat-panel">
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <i class="fas fa-robot"></i>
+                <span>Route Assistant</span>
+            </div>
+            <div class="chat-header-status" id="chat-ws-status">
+                <i class="fas fa-circle"></i>
+            </div>
+            <button class="chat-close-btn" onclick="toggleChat()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-message assistant">
+                <div class="chat-bubble">
+                    Hi! I'm your biking assistant. Ask me to plan a route, check station availability, or anything about bike-sharing in supported cities.
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" class="chat-input" placeholder="Ask about a route or city..." autocomplete="off">
+            <button id="chat-send-btn" class="chat-send-btn" onclick="sendChatMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- Alert Popup -->
     <div id="station-alert-popup" class="station-alert-popup">
         <div class="alert-content">
