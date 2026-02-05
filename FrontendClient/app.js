@@ -2,6 +2,7 @@ const API_CONFIG = {
     NOMINATIM_URL: 'https://nominatim.openstreetmap.org/search',
     ROUTING_URL: 'http://localhost:8090/MyService/Itinerary',
     OSRM_BASE_URL: 'https://router.project-osrm.org/route/v1',
+    LLM_WS_URL: 'ws://localhost:8000/ws/chat',
     ACTIVEMQ_WS_URL: 'ws://127.0.0.1:61614',
     ACTIVEMQ_TOPIC: '/topic/stationAlerts',
     MAP_CENTER: [45.764043, 4.835659],
@@ -16,6 +17,10 @@ let stompClient = null;
 let currentPickupStation = null;
 let currentCity = null;
 let currentRouteData = null;
+
+let chatWs = null;
+let chatHistory = [];
+let chatOpen = false;
 
 let interCityStations = {
     originStart: null,
@@ -742,6 +747,147 @@ function toggleFullscreen() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════
+// CHAT PANEL (LLM Assistant)
+// ═══════════════════════════════════════════════════════════
+
+function connectChatWs() {
+    const statusEl = document.getElementById('chat-ws-status');
+    if (statusEl) statusEl.className = 'chat-header-status connecting';
+
+    chatWs = new WebSocket(API_CONFIG.LLM_WS_URL);
+
+    chatWs.onopen = () => {
+        if (statusEl) statusEl.className = 'chat-header-status connected';
+    };
+
+    chatWs.onclose = () => {
+        if (statusEl) statusEl.className = 'chat-header-status disconnected';
+        setTimeout(connectChatWs, 5000);
+    };
+
+    chatWs.onerror = () => {
+        if (statusEl) statusEl.className = 'chat-header-status disconnected';
+    };
+
+    chatWs.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        handleChatResponse(msg);
+    };
+}
+
+function toggleChat() {
+    const panel = document.getElementById('chat-panel');
+    const fab = document.getElementById('chat-fab');
+    chatOpen = !chatOpen;
+
+    if (chatOpen) {
+        panel.classList.add('open');
+        fab.classList.add('hidden');
+        if (!chatWs || chatWs.readyState !== WebSocket.OPEN) {
+            connectChatWs();
+        }
+        document.getElementById('chat-input').focus();
+    } else {
+        panel.classList.remove('open');
+        fab.classList.remove('hidden');
+    }
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    if (!chatWs || chatWs.readyState !== WebSocket.OPEN) {
+        appendChatMessage('assistant', 'Not connected to the assistant. Reconnecting...');
+        connectChatWs();
+        return;
+    }
+
+    appendChatMessage('user', message);
+    chatHistory.push({ role: 'user', content: message });
+    input.value = '';
+
+    chatWs.send(JSON.stringify({
+        message: message,
+        history: chatHistory.slice(-10)
+    }));
+
+    document.getElementById('chat-send-btn').disabled = true;
+}
+
+function handleChatResponse(msg) {
+    const messagesEl = document.getElementById('chat-messages');
+
+    switch (msg.type) {
+        case 'thinking':
+            removeThinkingBubble();
+            appendChatBubble('assistant', msg.content, 'thinking');
+            break;
+
+        case 'tool_call':
+            removeThinkingBubble();
+            appendChatBubble('assistant', `<span class="tool-tag"><i class="fas fa-wrench"></i> ${msg.name}</span> Calling...`, 'thinking');
+            break;
+
+        case 'tool_result':
+            if (msg.name === 'get_itinerary' && msg.data) {
+                displayRoute(msg.data);
+                drawRouteOnMap(msg.data);
+            }
+            break;
+
+        case 'done':
+            removeThinkingBubble();
+            appendChatMessage('assistant', msg.content);
+            chatHistory.push({ role: 'assistant', content: msg.content });
+            document.getElementById('chat-send-btn').disabled = false;
+
+            if (msg.itinerary) {
+                displayRoute(msg.itinerary);
+                drawRouteOnMap(msg.itinerary);
+            }
+            break;
+
+        case 'error':
+            removeThinkingBubble();
+            appendChatMessage('assistant', msg.content);
+            document.getElementById('chat-send-btn').disabled = false;
+            break;
+    }
+
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function appendChatMessage(role, text) {
+    appendChatBubble(role, escapeHtml(text));
+}
+
+function appendChatBubble(role, html, extraClass) {
+    const messagesEl = document.getElementById('chat-messages');
+    const wrapper = document.createElement('div');
+    wrapper.className = `chat-message ${role}`;
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble' + (extraClass ? ` ${extraClass}` : '');
+    bubble.innerHTML = html;
+    wrapper.appendChild(bubble);
+    messagesEl.appendChild(wrapper);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function removeThinkingBubble() {
+    const messagesEl = document.getElementById('chat-messages');
+    const thinking = messagesEl.querySelector('.chat-bubble.thinking');
+    if (thinking) thinking.closest('.chat-message').remove();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initializeMap();
     setupAutocomplete();
@@ -762,6 +908,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter' && !document.getElementById('destination-suggestions').classList.contains('active')) {
             calculateRoute();
         }
+    });
+
+    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChatMessage();
     });
 
     window.addEventListener('resize', () => {
