@@ -22,6 +22,16 @@ target/
 *.class
 *.jar
 
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# LLM Service
+LLMService/.env
+LLMService/chroma_db/
+
 # OS files
 Thumbs.db
 .DS_Store
